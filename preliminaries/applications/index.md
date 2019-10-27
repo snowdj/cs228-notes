@@ -31,14 +31,14 @@ Consider a distribution $$p(\bfx)$$ over images, where $$\bfx$$ is an image repr
 <a id="image-generation"></a>
 ### Image Generation
 
-[Radford et al.](https://arxiv.org/abs/1710.10196) trained a probabilistic model $$ p(\bfx) $$ that assigns high probability to images that look like bedrooms. To do so, they trained their model on a dataset of bedroom images, a sample of which is shown below:
+[Radford et al.](https://arxiv.org/abs/1511.06434) trained a probabilistic model $$ p(\bfx) $$ that assigns high probability to images that look like bedrooms. To do so, they trained their model on a dataset of bedroom images, a sample of which is shown below:
 
 **Training Data**<br />
 ![bedroom1](bedroominpainting1.png)
 
 Now that we have this probabilistic model of bedrooms, we can now _**generate**_ new realistic bedroom images by sampling from this distribution. Specifically, new sampled images $$\hat{\bfx} \sim p(\bfx)$$ are created directly from our model $$p(\bfx)$$, which can now generate data similar to the bedroom images that we trained it with.
 
-Moreover, one of the reasons why generative models are powerful lie in the fact that they have many fewer parameters than the amount of data that they are trained with --- as a result, the models have to efficiently distill the essence of the training data to be able to generate new samples. We see that our particular probabilistic model of bedrooms has done a good job of capturing the data's essence, and can therefore produce highly realistic images, some examples of which are shown below:
+Moreover, one of the reasons why generative models are powerful lies in the fact that they have many fewer parameters than the amount of data that they are trained with --- as a result, the models have to efficiently distill the essence of the training data to be able to generate new samples. We see that our particular probabilistic model of bedrooms has done a good job of capturing the data's essence, and can therefore produce highly realistic images, some examples of which are shown below:
 
 **Generated Data**<br />
 ![bedroom2](bedroominpainting2.png)

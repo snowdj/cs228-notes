@@ -3,6 +3,10 @@ layout: post
 title: The variational auto-encoder
 ---
 
+$$
+\DeclareMathOperator{\diag}{diag}
+$$
+
 In this chapter, we are going to use various ideas that we have learned in the class in order to present a very influential recent probabilistic model called the *variational autoencoder*.
 
 Variational autoencoders (VAEs) are a deep learning technique for learning latent representations. They have also been used to [draw images](https://arxiv.org/pdf/1502.04623.pdf), achieve state-of-the-art results in [semi-supervised learning](https://arxiv.org/pdf/1602.05473.pdf), as well as [interpolate between sentences](https://arxiv.org/abs/1511.06349).
@@ -15,7 +19,7 @@ Consider a [directed](../../representation/directed) [latent-variable](../../lea
 
 $$ p(x,z) = p(x|z)p(z) $$
 
-with observed $$x \in \mathcal{X}$$, where $$\mathcal{X}$$ can be continuous, discrete, or latent $$z \in \Re^k$$.
+with observed $$x \in \mathcal{X}$$, where $$\mathcal{X}$$ can be continuous or discrete, and latent $$z \in \Re^k$$.
 
 {% include marginfigure.html id="faces" url="assets/img/faces.png" description="Variational autoencoder $$p(x|z)p(z)$$ applied to a face images (modeled by $$x$$). The learned latent space $$z$$ can be used to interpolate between facial expressions." %}
 To make things concrete, you may think of $$x$$ as being an image (e.g. a human face), and $$z$$ as latent factors (not seen during training) that explain features of the face. For example, one coordinate of $$z$$ can encode whether the face is happy or sad, another one whether the face is male or female, etc.
@@ -25,7 +29,7 @@ In this chapter, we will assume for simplicity that there is only one latent lay
 
 ### Learning deep generative models
 
-Suppose now that we are given a dataset $$D = \{x^1,x^2,...,x^n\}$$. We are interested in the following [inference](../../inference/variational/) and [learning](../../learning/directed/) tasks:
+Suppose now that we are given a dataset $$D = \{x^1, x^2, \dotsc, x^n\}$$. We are interested in the following [inference](../../inference/variational/) and [learning](../../learning/directed/) tasks:
 
 - Learning the parameters $$\theta$$ of $$p$$.
 - Approximate posterior inference over $$z$$: given an image $$x$$, what are its latent factors?
@@ -46,7 +50,7 @@ The [EM algorithm](../../learning/latent/) can be used to learn latent-variable 
 
 To perform approximate inference, we may use [mean field](../../inference/variational/). Recall, however, that one step of mean field requires us to compute an expectation whose time complexity scales exponentially with the size of the Markov blanket of the target variable.
 
-What is the size of the [Markov blanket](../../representation/undirected/) for $$z$$? If we assume that at least one component of $$x$$ depends on each component of $$z$$, then this introduces a [V-structure](../../representation/directed/) into the graph of our model (the $$x$$, which are observed, are [explaining away](../../representation/directed/) the differences among the $$z$$). Thus, we know that all the $$z$$ variables will depend on each other and the Markov blanket of some $$z_i$$ will contain all the other $$z$$-variables. This will make mean-field intractable{% include sidenote.html id='note-meanfield' note='The authors refer to this when they say "the required integrals for any reasonable mean-field VB algorithm are also intractable." They also discuss the limitations of EM and sampling methods in the introduction and the methods section.' %}. An equivalent (and simpler) explanation is that $$p$$ will contain a factor $$p(x_i \mid z_1,...,z_k)$$, in which all the $$z$$ variables are tied.
+What is the size of the [Markov blanket](../../representation/undirected/) for $$z$$? If we assume that at least one component of $$x$$ depends on each component of $$z$$, then this introduces a [V-structure](../../representation/directed/) into the graph of our model (the $$x$$, which are observed, are [explaining away](../../representation/directed/) the differences among the $$z$$). Thus, we know that all the $$z$$ variables will depend on each other and the Markov blanket of some $$z_i$$ will contain all the other $$z$$-variables. This will make mean-field intractable{% include sidenote.html id='note-meanfield' note='The authors refer to this when they say "the required integrals for any reasonable mean-field VB algorithm are also intractable." They also discuss the limitations of EM and sampling methods in the introduction and the methods section.' %}. An equivalent (and simpler) explanation is that $$p$$ will contain a factor $$p(x_i \mid z_1, \dotsc, z_k)$$, in which all the $$z$$ variables are tied.
 
 Another approach would be to use [sampling-based methods](../../inference/sampling/). In their seminal 2013 [paper](https://arxiv.org/abs/1312.6114) first describing the variational autoencoder, Kingma and Welling compare the VAE against these kinds of algorithms, but they find that these sampling-based methods don't scale well to large datasets. In addition, techniques such as [Metropolis-Hastings](../../inference/sampling/) require a hand-crafted proposal distribution, which might be difficult to choose.
 
@@ -54,7 +58,7 @@ Another approach would be to use [sampling-based methods](../../inference/sampli
 
 We are now going to learn about Auto-encoding variational Bayes (AEVB), an algorithm that can efficiently solve our three inference and learning tasks; the variational auto-encoder will be one instantiation of this algorithm.
 
-AEVB is based on ideas from [variational inference](../../inference/variational/). Recall that in variational inference, we are interested in maximizing the [evidence lower bound](../../inference/variational/) (ELBO)
+AEVB is based on ideas from [variational inference](../../inference/variational/). Recall that in variational inference, we are interested in maximizing the [evidence lower bound](../../inference/variational/#the-variational-lower-bound) (ELBO)
 
 $$
 \mathcal{L}(p_\theta,q_\phi) = \E_{q_\phi(z|x)} \left[ \log p_\theta(x,z) - \log q_\phi(z|x) \right]
@@ -97,19 +101,18 @@ However, taking the gradient with respect to $$q$$ is more difficult. Notice tha
 One way to estimate this gradient is via the so-called score function estimator:
 
 $$
-\nabla_{\phi} \E_{q_\phi(z)} \left[ \log p_\theta(x,z) - \log q_\phi(z) \right] = \E_{q_\phi(z)} \left[ \left(\log p_\theta(x,z) - \log q_\phi(z) \right) \nabla_{\phi} \log q_\phi(z) \right]
+\nabla_\phi \E_{q_\phi(z)} \left[ \log p_\theta(x,z) - \log q_\phi(z) \right] = \E_{q_\phi(z)} \left[ \left(\log p_\theta(x,z) - \log q_\phi(z) \right) \nabla_\phi \log q_\phi(z) \right]
 $$
 
 This follows from some basic algebra and calculus and takes about half a page to derive. We leave it as an exercise to the reader, but for those interested, the full derivation may be found in Appendix B of this [paper](https://www.cs.toronto.edu/~amnih/papers/nvil.pdf).
 
 The above identity places the gradient inside the expectation, which we may now evaluate using Monte Carlo. We refer to this as the *score function* estimator of the gradient.
 
-Unfortunately, the score function estimator has an important shortcoming: it has a high variance. What does this mean? Suppose you are using Monte Carlo to estimate an expectation whose mean is 1. If your samples are $$0.9, 1.1, 0.96, 1.05,..$$ and are close to 1, then after a few samples, you will get a good estimate of the true expectation. If on the other hand you sample zero 99 times out of 100, and you sample 100 once, the expectation is still correct, but you will have to take a very large number of samples to figure out that the true expectation is actually one. We refer to the latter case as being high variance.
+Unfortunately, the score function estimator has an important shortcoming: it has a high variance. What does this mean? Suppose you are using Monte Carlo to estimate some quantity with expected value equal to 1. If your samples are $$0.9, 1.1, 0.96, 1.05, \dotsc$$ and are close to 1, then after a few samples, you will get a good estimate of the true expectation. If on the other hand you sample zero 99 times out of 100, and you sample 100 once, the expectation is still correct, but you will have to take a very large number of samples to figure out that the true expectation is actually one. We refer to the latter case as being high variance.
 
 This is the kind of problem we often run into with the score function estimator. In fact, its variance is so high, that we cannot use it to learn many models.
 
-The key contribution of the VAE paper is to propose an alternative estimator that is much better behaved.
-This is done in two steps: we first reformulate the ELBO so that parts of it can be computed in closed form (without Monte Carlo), and then we use an alternative gradient estimator, based on the so-called reparametrization trick.
+The key contribution of the VAE paper is to propose an alternative estimator that is much better behaved. This is done in two steps: we first reformulate the ELBO so that parts of it can be computed in closed form (without Monte Carlo), and then we use an alternative gradient estimator, based on the so-called reparametrization trick.
 
 ### The SGVB estimator
 
@@ -119,7 +122,7 @@ $$
 \log p(x) \geq \E_{q_\phi(z|x)} \left[ \log p_\theta(x|z) \right] - KL(q_\phi(z|x) || p(z))
 $$
 
-It is straightforward to verify that this is the same using ELBO using some algebra.
+It is straightforward to verify that this is the same as ELBO using some algebra.
 
 This reparametrization has a very interesting interpretation. First, think of $$x$$ as an observed data point. The right-hand side consists of two terms; both involve taking a sample $$z \sim q(z\mid x)$$, which we can interpret as a code describing $$x$$. We are also going to call $$q$$ the *encoder*.
 
@@ -152,13 +155,13 @@ $$ z = g_{\mu, \sigma}(\epsilon) = \mu + \epsilon \cdot \sigma, $$
 
 where $$\epsilon \sim \mathcal{N}(0,1)$$. It is easy to check that the two ways of expressing the random variable $$z$$ lead to the same distribution.
 
-The biggest advantage of this approach is that we many now write the gradient of an expectation with respect to $$q(z)$$ (for any $$f$$) as
+The biggest advantage of this approach is that we may now write the gradient of an expectation with respect to $$q(z)$$ (for any $$f$$) as
 
 $$
-\nabla_\phi \E_{z \sim q(z\mid x)}\left[ f(x,z) \right] = \nabla_\phi \E_{\epsilon \sim p(\epsilon)}\left[ f(x,g(\epsilon, x)) \right] = \E_{\epsilon \sim p(\epsilon)}\left[ \nabla_\phi f(x,g(\epsilon, x)) \right].
+\nabla_\phi \E_{z \sim q_\phi(z\mid x)}\left[ f(x,z) \right] = \nabla_\phi \E_{\epsilon \sim p(\epsilon)}\left[ f(x, g_\phi(\epsilon, x)) \right] = \E_{\epsilon \sim p(\epsilon)}\left[ \nabla_\phi f(x, g_\phi(\epsilon, x)) \right].
 $$
 
-The gradient is now inside the expectation and we may use Monte Carlo to get an estimate of the right-hand term. This approach will have a much lower variance{% include sidenote.html id="note-reparam" note="For more details as to why, have a look at the appendix of the paper by [Rezende et al.](https://arxiv.org/pdf/1401.4082.pdf)" %} than the score function estimator, and will enable us to learn models that we otherwise couldn't learn.
+The gradient is now inside the expectation, so we may take Monte Carlo samples to estimate the right-hand term. This approach has much lower variance{% include sidenote.html id="note-reparam" note="For more details as to why, have a look at the appendix of the paper by [Rezende et al.](https://arxiv.org/pdf/1401.4082.pdf)" %} than the score function estimator, and will enable us to learn models that we otherwise couldn't learn.
 
 ### Choosing $$q$$ and $$p$$
 
@@ -168,9 +171,9 @@ For these reasons, we are going to parametrize $$q$$ and $$p$$ by *neural networ
 
 But what does it mean to parametrize a distribution with a neural network? Let's assume again that $$q(z\mid x)$$ and $$p(x\mid z)$$ are Normal distributions; we may write them as
 
-$$ q(z\mid x) = \mathcal{N}(z; \vec\mu(x), \vec \sigma(x) \odot I) $$
+$$ q(z\mid x) = \mathcal{N}(z; \vec\mu(x), \diag(\vec\sigma(x))^2) $$
 
-where $$\vec\mu(x), \vec \sigma(x)$$ are deterministic vector-valued functions of $$x$$ parametrized by an arbitrary complex neural network.
+where $$\vec\mu(x), \vec\sigma(x)$$ are deterministic vector-valued functions of $$x$$ parametrized by an arbitrary complex neural network.
 
 More generally, the same technique can be applied to any exponential family distribution by parameterizing the sufficient statistics by a function of $$x$$.
 
@@ -184,14 +187,14 @@ A variational auto-encoder uses the AEVB algorithm to learn a specific model $$p
 
 $$
 \begin{align*}
-p(x\mid z) & = \mathcal{N}(x; \vec\mu(z), \vec \sigma(z) \odot I) \\
+p(x\mid z) & = \mathcal{N}(x; \vec\mu(z), \diag(\vec\sigma(z))^2) \\
 p(z) & = \mathcal{N}(z; 0, I),
 \end{align*}
 $$
 
-where $$\vec\mu(z), \vec \sigma(z)$$ are parametrized by a neural network (typically, two dense hidden layers of 500 units each). The model $$q$$ is similarly parametrized as
+where $$\vec\mu(z), \vec\sigma(z)$$ are parametrized by a neural network (typically, two dense hidden layers of 500 units each). The model $$q$$ is similarly parametrized as
 
-$$ q(z\mid x) = \mathcal{N}(z; \vec\mu(x), \vec \sigma(x) \odot I). $$
+$$ q(z\mid x) = \mathcal{N}(z; \vec\mu(x), \diag(\vec\sigma(x))^2). $$
 
 This choice of $$p$$ and $$q$$ allows us to further simplify the auto-encoding ELBO. In particular, we can use a closed form expression to compute the regularization term, and we only use Monte-Carlo estimates for the reconstruction term. These expressions are given in the paper.
 
